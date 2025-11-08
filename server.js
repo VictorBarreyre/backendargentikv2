@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const uploadRoute = require('./routes/upload');
+const uploadRoute = require('./routes/uploads');
 
 const app = express();
 
