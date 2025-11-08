@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use(uploadRoute);
+app.use('/api', uploadRoute);
 
 // Route de test
 app.get('/', (req, res) => {

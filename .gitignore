@@ -17,11 +17,12 @@ node_modules/
 .pnp.js
 
 # ============================================
-# FICHIERS TEMPORAIRES
+# FICHIERS TEMPORAIRES ET UPLOADS
 # ============================================
 temp/
 tmp/
 *.tmp
+uploads/
 
 # ============================================
 # BUILD / PRODUCTION
