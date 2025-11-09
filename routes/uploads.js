@@ -151,7 +151,7 @@ router.post('/upload-and-send', upload.array('files'), async (req, res) => {
     console.log('👤 Body:', req.body);
     console.log('📁 Files:', req.files?.length, 'fichier(s)');
 
-    const { nom, prenom, email, message } = req.body;
+    const { nom, prenom, email, message, issue } = req.body;
     const files = req.files;
 
     // Validation
@@ -167,19 +167,24 @@ router.post('/upload-and-send', upload.array('files'), async (req, res) => {
       return res.status(500).json({ error: 'Configuration Google Drive manquante' });
     }
 
-    // 1. Obtenir ou créer le dossier
-    const folderName = `${prenom}_${nom}`;
-    console.log(`📂 Traitement du dossier: ${folderName}`);
-    const folderId = await getOrCreateFolder(folderName, PARENT_FOLDER_ID);
+    // 1. Obtenir ou créer le dossier de l'issue (BREAK par exemple)
+    const issueFolderName = issue || 'BREAK'; // Par défaut "BREAK" si pas d'issue fournie
+    console.log(`📂 Traitement du dossier issue: ${issueFolderName}`);
+    const issueFolderId = await getOrCreateFolder(issueFolderName, PARENT_FOLDER_ID);
 
-    // 2. Upload des fichiers dans le dossier
+    // 2. Obtenir ou créer le dossier du contributeur dans le dossier de l'issue
+    const contributorFolderName = `${prenom}_${nom}`;
+    console.log(`📂 Traitement du dossier contributeur: ${contributorFolderName}`);
+    const contributorFolderId = await getOrCreateFolder(contributorFolderName, issueFolderId);
+
+    // 3. Upload des fichiers dans le dossier du contributeur
     const uploadedFiles = [];
     for (const file of files) {
       console.log(`⬆️ Upload du fichier: ${file.originalname}`);
       const uploadedFile = await uploadFileToDrive(
         file.path,
         file.originalname,
-        folderId
+        contributorFolderId
       );
       uploadedFiles.push(uploadedFile);
 
@@ -187,11 +192,11 @@ router.post('/upload-and-send', upload.array('files'), async (req, res) => {
       fs.unlinkSync(file.path);
     }
 
-    // 3. Envoyer l'email de confirmation
+    // 4. Envoyer l'email de confirmation
     console.log(`📧 Envoi email de confirmation à: ${email}`);
     await sendEmail(email, nom, prenom, uploadedFiles);
 
-    // 4. Envoyer une notification interne (si ADMIN_EMAIL configuré)
+    // 5. Envoyer une notification interne (si ADMIN_EMAIL configuré)
     if (process.env.ADMIN_EMAIL) {
       console.log('📧 Envoi notification admin');
       const filesListText = uploadedFiles.map(f => `- ${f.name}: ${f.webViewLink}`).join('\n');
@@ -218,7 +223,8 @@ router.post('/upload-and-send', upload.array('files'), async (req, res) => {
     res.json({
       success: true,
       message: 'Fichiers uploadés avec succès',
-      folderId,
+      issueFolderId,
+      contributorFolderId,
       files: uploadedFiles
     });
 
